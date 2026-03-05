@@ -1,0 +1,29 @@
+# Environment — never commit real credentials
+.env
+
+# Maddy runtime data
+maddy_data/maddy.db
+maddy_data/maddy.db-shm
+maddy_data/maddy.db-wal
+maddy_data/buffer/
+maddy_data/messages/
+maddy_data/queue/
+maddy_data/tls/
+maddy_data/dkim_keys
+maddy_data/*.conf
+
+# Keep the conf and directory structure
+!maddy_data/.gitkeep
+
+# Docker build artefacts
+admin/.docker-build-*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+renew-tls.sh

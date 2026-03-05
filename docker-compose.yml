@@ -1,0 +1,44 @@
+services:
+  maddy:
+    image: foxcpp/maddy:latest
+    container_name: maddy
+    restart: always
+    network_mode: host
+    volumes:
+      - ./maddy_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 300M
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  maddy-admin:
+    build: ./admin
+    container_name: maddy-admin
+    restart: always
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-11000}:8080"
+    volumes:
+      - ./admin/app:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MADDY_DOMAIN=${MADDY_DOMAIN}
+      - MADDY_CONTAINER=maddy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
