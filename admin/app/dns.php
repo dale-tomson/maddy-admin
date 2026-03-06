@@ -2,90 +2,20 @@
 require '_auth.php';
 
 $flash        = popFlash();
-$dkimSelector = 'default';
-$dkimKeyPath  = '/data/dkim_keys/' . DOMAIN . '/' . $dkimSelector . '.key';
-$hostname     = 'mx.' . DOMAIN;
+$flash = popFlash();
+require_once dirname(__DIR__) . '/lib/AdminService.php';
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'gen-dkim') {
-    $key = openssl_pkey_new([
-        'private_key_bits' => 2048,
-        'private_key_type' => OPENSSL_KEYTYPE_RSA,
-    ]);
-    if ($key) {
-        openssl_pkey_export($key, $privatePem);
-        // Domain and selector are safe alphanumeric values — no special chars
-        $d = DOMAIN;
-        $s = $dkimSelector;
-        maddy("sh -c 'mkdir -p /data/dkim_keys/$d'");
-        maddy("sh -c 'cat > /data/dkim_keys/$d/$s.key'", $privatePem);
-        setFlash('DKIM key pair generated. Add the DNS record below, then restart Maddy.');
-    } else {
-        setFlash('Failed to generate DKIM key — openssl_pkey_new() failed.', 'err');
-    }
-    header('Location: /dns.php'); exit;
-}
-
-// ── Read DKIM state ───────────────────────────────────────────────────────────
-$dkimValue   = null;
-$dkimError   = null;
-$dkimExists  = false;
-
-$checkOutput = maddy("sh -c '[ -f " . escapeshellarg($dkimKeyPath) . " ] && echo EXISTS || echo MISSING'");
-
-if (trim($checkOutput) === 'EXISTS') {
-    $dkimExists = true;
-    $privPem    = maddy('cat ' . escapeshellarg($dkimKeyPath));
-    $privKey    = !empty($privPem) ? openssl_pkey_get_private($privPem) : false;
-    if ($privKey) {
-        $details    = openssl_pkey_get_details($privKey);
-        $pubBase64  = preg_replace('/-----[^-]+-----|\s+/', '', $details['key']);
-        $dkimValue  = 'v=DKIM1; k=rsa; p=' . $pubBase64;
-    } else {
-        $dkimError = 'Key file found but could not be parsed. Try regenerating.';
-    }
-}
-
-// ── Resolve server IP ─────────────────────────────────────────────────────────
-$serverIp = gethostbyname($hostname);
-if ($serverIp === $hostname) $serverIp = null; // DNS not resolving yet
-
-// ── Build records ─────────────────────────────────────────────────────────────
-$records = [
-    [
-        'label'  => 'MX',
-        'name'   => '@',
-        'type'   => 'MX',
-        'value'  => '10 ' . $hostname . '.',
-        'note'   => 'Routes inbound email to your mail server.',
-        'status' => 'required',
-    ],
-    [
-        'label'  => 'A (MX host)',
-        'name'   => 'mx',
-        'type'   => 'A',
-        'value'  => $serverIp ?? '<YOUR_SERVER_IP>',
-        'note'   => 'Points the MX hostname to your server\'s IP address.',
-        'status' => 'required',
-        'warn'   => !$serverIp,
-    ],
-    [
-        'label'  => 'SPF',
-        'name'   => '@',
-        'type'   => 'TXT',
-        'value'  => 'v=spf1 mx ~all',
-        'note'   => 'Authorises your MX server to send email. Reduces spam score.',
-        'status' => 'required',
-    ],
-    [
-        'label'  => 'DMARC',
-        'name'   => '_dmarc',
-        'type'   => 'TXT',
-        'value'  => 'v=DMARC1; p=quarantine; rua=mailto:postmaster@' . DOMAIN . '; fo=1',
-        'note'   => 'DMARC policy. Start with p=none while testing, upgrade to p=quarantine/reject.',
-        'status' => 'required',
-    ],
-];
+// Delegate POST (DKIM generation) and fetch DNS data
+AdminService::handlePost('dns');
+$dns = AdminService::getDnsData();
+$dkimSelector = $dns['dkimSelector'];
+$dkimKeyPath = '/data/dkim_keys/' . DOMAIN . '/' . $dkimSelector . '.key';
+$hostname = 'mx.' . DOMAIN;
+$dkimValue = $dns['dkimValue'];
+$dkimError = $dns['dkimError'];
+$dkimExists = $dns['dkimExists'];
+$serverIp = $dns['serverIp'];
+$records = $dns['records'];
 
 $page  = 'dns';
 $title = 'DNS Records';

@@ -8,8 +8,8 @@ $accounts = listAccounts();
 $selected = $_GET['email'] ?? '';
 
 // Delegate POST handling
-require_once __DIR__ . '/../lib/AdminService.php';
-AdminService::handlePasswdPost();
+require_once dirname(__DIR__) . '/lib/AdminService.php';
+AdminService::handlePost('passwd');
 
 $page  = 'passwd';
 $title = 'Change Password';
