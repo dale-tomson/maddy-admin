@@ -1,15 +1,11 @@
 <?php
 require '_auth.php';
-
-$flash = popFlash();
-$accounts = listAccounts();
-
-// Pre-select account from query string (from "Change PW" link)
-$selected = $_GET['email'] ?? '';
-
-// Delegate POST handling
 require_once __DIR__ . '/lib/AdminService.php';
+
 AdminService::handlePost('passwd');
+$flash    = popFlash();
+$accounts = listAccounts();
+$selected = $_GET['email'] ?? '';
 
 $page  = 'passwd';
 $title = 'Change Password';

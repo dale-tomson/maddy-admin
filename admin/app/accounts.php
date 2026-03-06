@@ -1,18 +1,14 @@
 <?php
 require '_auth.php';
-
-$flash = popFlash();
-
 require_once __DIR__ . '/lib/AdminService.php';
-// Handle POST actions (may redirect)
-AdminService::handlePost('accounts');
-// Fetch view data
-$data = AdminService::getAccountsData();
-$accounts = $data['accounts'];
-$creds = $data['creds'];
-$imaps = $data['imaps'];
 
-// ── Render ────────────────────────────────────────────────────────────────────
+AdminService::handlePost('accounts');
+$flash    = popFlash();
+$data     = AdminService::getAccountsData();
+$accounts = $data['accounts'];
+$creds    = $data['creds'];
+$imaps    = $data['imaps'];
+
 $page  = 'accounts';
 $title = 'Accounts';
 require '_head.php';
@@ -29,11 +25,7 @@ require '_head.php';
 </div>
 <?php endif; ?>
 
-<?php
-// -- Connection info: parse maddy config for ports and hostname
-// Connection info for display
-$conn = AdminService::getConnInfo();
-?>
+<?php $conn = AdminService::getConnInfo(); ?>
 
 <!-- Create new account -->
 <div class="panel">

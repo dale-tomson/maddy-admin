@@ -17,9 +17,7 @@ class AdminService {
         ],
         'smtp' => [
             'create_smtp' => 'acctCreateSmtp',
-            'create_imap' => 'acctCreateImap',
             'delete_smtp' => 'acctDeleteSmtp',
-            'delete_imap' => 'acctDeleteImap',
         ],
         'passwd' => [
             'set_password' => 'passwdSet',

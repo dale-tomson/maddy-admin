@@ -1,21 +1,15 @@
 <?php
 require '_auth.php';
-
 require_once __DIR__ . '/lib/AdminService.php';
-$flash = popFlash();
-// Delegate POST handling
-AdminService::handlePost('smtp');
 
-// Lists
-// Lists
-$data = AdminService::getAccountsData();
+AdminService::handlePost('smtp');
+$flash = popFlash();
+$data  = AdminService::getAccountsData();
 $creds = $data['creds'];
 $imaps = $data['imaps'];
+$conn  = AdminService::getConnInfo();
 
-// connection info for display
-$conn = AdminService::getConnInfo();
-
-$page = 'smtp';
+$page  = 'smtp';
 $title = 'SMTP Credentials';
 require '_head.php';
 ?>
@@ -115,4 +109,3 @@ $mail->Password = 'PASSWORD';
 <!-- Credentials are managed on the Accounts page -->
 
 <?php require '_foot.php'; ?>
-<?php // copyText / toast handled globally in _foot.php ?>

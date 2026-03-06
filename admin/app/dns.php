@@ -1,22 +1,16 @@
 <?php
 require '_auth.php';
-
-$flash        = popFlash();
-$flash = popFlash();
-// Locate AdminService robustly
 require_once __DIR__ . '/lib/AdminService.php';
 
-// Delegate POST (DKIM generation) and fetch DNS data
 AdminService::handlePost('dns');
-$dns = AdminService::getDnsData();
+$flash        = popFlash();
+$dns          = AdminService::getDnsData();
 $dkimSelector = $dns['dkimSelector'];
-$dkimKeyPath = '/data/dkim_keys/' . DOMAIN . '/' . $dkimSelector . '.key';
-$hostname = 'mx.' . DOMAIN;
-$dkimValue = $dns['dkimValue'];
-$dkimError = $dns['dkimError'];
-$dkimExists = $dns['dkimExists'];
-$serverIp = $dns['serverIp'];
-$records = $dns['records'];
+$dkimValue    = $dns['dkimValue'];
+$dkimError    = $dns['dkimError'];
+$dkimExists   = $dns['dkimExists'];
+$serverIp     = $dns['serverIp'];
+$records      = $dns['records'];
 
 $page  = 'dns';
 $title = 'DNS Records';
