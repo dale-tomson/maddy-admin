@@ -8,7 +8,7 @@ $accounts = listAccounts();
 $selected = $_GET['email'] ?? '';
 
 // Delegate POST handling
-require_once dirname(__DIR__) . '/lib/AdminService.php';
+require_once __DIR__ . '/lib/AdminService.php';
 AdminService::handlePost('passwd');
 
 $page  = 'passwd';

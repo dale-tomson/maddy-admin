@@ -3,7 +3,8 @@ require '_auth.php';
 
 $flash        = popFlash();
 $flash = popFlash();
-require_once dirname(__DIR__) . '/lib/AdminService.php';
+// Locate AdminService robustly
+require_once __DIR__ . '/lib/AdminService.php';
 
 // Delegate POST (DKIM generation) and fetch DNS data
 AdminService::handlePost('dns');

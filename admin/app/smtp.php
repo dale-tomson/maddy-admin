@@ -1,7 +1,7 @@
 <?php
 require '_auth.php';
 
-require_once dirname(__DIR__) . '/lib/AdminService.php';
+require_once __DIR__ . '/lib/AdminService.php';
 $flash = popFlash();
 // Delegate POST handling
 AdminService::handlePost('smtp');
