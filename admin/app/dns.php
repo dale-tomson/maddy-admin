@@ -3,7 +3,7 @@ require '_auth.php';
 require_once __DIR__ . '/lib/AdminService.php';
 
 AdminService::handlePost('dns');
-$flash        = popFlash();
+$flash        = Flash::pop();
 $dns          = AdminService::getDnsData();
 $dkimSelector = $dns['dkimSelector'];
 $dkimValue    = $dns['dkimValue'];

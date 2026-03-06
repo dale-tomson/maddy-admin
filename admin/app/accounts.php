@@ -3,7 +3,7 @@ require '_auth.php';
 require_once __DIR__ . '/lib/AdminService.php';
 
 AdminService::handlePost('accounts');
-$flash    = popFlash();
+$flash    = Flash::pop();
 $data     = AdminService::getAccountsData();
 $accounts = $data['accounts'];
 $creds    = $data['creds'];

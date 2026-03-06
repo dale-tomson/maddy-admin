@@ -3,7 +3,7 @@ require '_auth.php';
 require_once __DIR__ . '/lib/AdminService.php';
 
 AdminService::handlePost('smtp');
-$flash = popFlash();
+$flash = Flash::pop();
 $data  = AdminService::getAccountsData();
 $creds = $data['creds'];
 $imaps = $data['imaps'];

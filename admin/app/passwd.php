@@ -3,8 +3,8 @@ require '_auth.php';
 require_once __DIR__ . '/lib/AdminService.php';
 
 AdminService::handlePost('passwd');
-$flash    = popFlash();
-$accounts = listAccounts();
+$flash    = Flash::pop();
+$accounts = Maddy::listAccounts();
 $selected = $_GET['email'] ?? '';
 
 $page  = 'passwd';

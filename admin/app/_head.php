@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/maddy_status.php';
-$maddy_status = get_maddy_status();
+require_once __DIR__ . '/lib/MaddyStatus.php';
+$maddy_status = MaddyStatus::get();
 ?>
 <!DOCTYPE html>
 <html lang="en">
