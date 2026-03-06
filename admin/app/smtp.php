@@ -1,83 +1,19 @@
 <?php
 require '_auth.php';
 
+require_once __DIR__ . '/../lib/AdminService.php';
 $flash = popFlash();
-
-// Handle POST actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    $identifier = preg_replace('/[^a-zA-Z0-9._+\-]/', '', trim($_POST['identifier'] ?? ''));
-    $email = $identifier ? $identifier . '@' . DOMAIN : '';
-    $pw = $_POST['password'] ?? '';
-
-    if ($action === 'create_smtp') {
-        if (!$identifier) {
-            setFlash('Username is required.', 'err');
-        } else {
-            if (!$pw) $pw = bin2hex(random_bytes(12));
-            maddy('maddy creds create ' . escapeshellarg($email), $pw);
-            setFlash('Created SMTP credential: ' . $email);
-        }
-        header('Location: /smtp.php'); exit;
-    }
-
-    if ($action === 'create_imap') {
-        if ($email) {
-            maddy('maddy imap-acct create ' . escapeshellarg($email));
-            setFlash('Created IMAP account: ' . $email);
-        }
-        header('Location: /smtp.php'); exit;
-    }
-
-    if ($action === 'delete_smtp') {
-        $email = $_POST['email'] ?? '';
-        if ($email) {
-            maddy('maddy creds remove ' . escapeshellarg($email));
-            setFlash('Removed credential: ' . $email);
-        }
-        header('Location: /smtp.php'); exit;
-    }
-
-    if ($action === 'delete_imap') {
-        $email = $_POST['email'] ?? '';
-        if ($email) {
-            // confirm removal non-interactively
-            $out = shell_exec("printf 'y\\n' | docker exec " . escapeshellarg(CONTAINER) . " maddy imap-acct remove " . escapeshellarg($email) . " 2>&1");
-            setFlash('Removed IMAP account: ' . $email);
-        }
-        header('Location: /smtp.php'); exit;
-    }
-}
+// Delegate POST handling
+AdminService::handleSmtpPost();
 
 // Lists
-$creds_raw = maddy('maddy creds list');
-$creds = array_filter(array_map('trim', explode("\n", $creds_raw)));
-
-$imap_raw = maddy('maddy imap-acct list');
-$imaps = array_filter(array_map('trim', explode("\n", $imap_raw)));
+// Lists
+$data = AdminService::getAccountsData();
+$creds = $data['creds'];
+$imaps = $data['imaps'];
 
 // connection info for display
-$conf_file = __DIR__ . '/../../maddy_data/maddy.conf';
-$conn = ['smtp' => [], 'submission' => [], 'imap' => [], 'hostname' => DOMAIN];
-if (is_readable($conf_file)) {
-  $c = file_get_contents($conf_file);
-  if (preg_match('/^\$\(hostname\)\s*=\s*(\S+)/m', $c, $m)) {
-    $conn['hostname'] = trim($m[1]);
-  }
-  if (preg_match_all('/^\s*(smtp|submission|imap)\s+([^\{\n]+)/m', $c, $mats, PREG_SET_ORDER)) {
-    foreach ($mats as $m) {
-      $key = $m[1];
-      $parts = preg_split('/\s+/', trim($m[2]));
-      foreach ($parts as $p) {
-        if (preg_match('/:(\d+)/', $p, $pm)) {
-          $port = $pm[1];
-          $proto = strpos($p, 'tls://') === 0 || strpos($p, 'smtps://') === 0 ? 'tls' : (strpos($p, 'tcp://') === 0 ? 'tcp' : 'unknown');
-          $conn[$key][] = ['port' => $port, 'proto' => $proto, 'raw' => $p];
-        }
-      }
-    }
-  }
-}
+$conn = AdminService::getConnInfo();
 
 $page = 'smtp';
 $title = 'SMTP Credentials';

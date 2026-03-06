@@ -7,23 +7,9 @@ $accounts = listAccounts();
 // Pre-select account from query string (from "Change PW" link)
 $selected = $_GET['email'] ?? '';
 
-// ── Handle POST ───────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $pw    = $_POST['new_password'] ?? '';
-    $pw2   = $_POST['confirm_password'] ?? '';
-
-    if (!$email || !$pw) {
-        setFlash('Email and new password are required.', 'err');
-    } elseif ($pw !== $pw2) {
-        setFlash('Passwords do not match.', 'err');
-    } else {
-        maddy('maddy creds password ' . escapeshellarg($email), $pw);
-        setFlash('Password updated for: ' . $email);
-        $selected = $email;
-    }
-    header('Location: /passwd.php?email=' . urlencode($selected)); exit;
-}
+// Delegate POST handling
+require_once __DIR__ . '/../lib/AdminService.php';
+AdminService::handlePasswdPost();
 
 $page  = 'passwd';
 $title = 'Change Password';

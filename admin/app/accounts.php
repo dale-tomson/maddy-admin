@@ -3,11 +3,11 @@ require '_auth.php';
 
 $flash = popFlash();
 
-require_once __DIR__ . '/accounts_logic.php';
-// Handle any POST actions (may redirect)
-handle_accounts_post();
+require_once __DIR__ . '/../lib/AdminService.php';
+// Handle POST actions (may redirect)
+AdminService::handleAccountsPost();
 // Fetch view data
-$data = get_accounts_data();
+$data = AdminService::getAccountsData();
 $accounts = $data['accounts'];
 $creds = $data['creds'];
 $imaps = $data['imaps'];
@@ -31,27 +31,8 @@ require '_head.php';
 
 <?php
 // -- Connection info: parse maddy config for ports and hostname
-$conf_file = __DIR__ . '/../../maddy_data/maddy.conf';
-$conn = ['smtp' => [], 'submission' => [], 'imap' => [], 'hostname' => DOMAIN];
-if (is_readable($conf_file)) {
-    $c = file_get_contents($conf_file);
-    if (preg_match('/^\$\(hostname\)\s*=\s*(\S+)/m', $c, $m)) {
-        $conn['hostname'] = trim($m[1]);
-    }
-    if (preg_match_all('/^\s*(smtp|submission|imap)\s+([^\{\n]+)/m', $c, $mats, PREG_SET_ORDER)) {
-        foreach ($mats as $m) {
-            $key = $m[1];
-            $parts = preg_split('/\s+/', trim($m[2]));
-            foreach ($parts as $p) {
-                if (preg_match('/:(\d+)/', $p, $pm)) {
-                    $port = $pm[1];
-                    $proto = strpos($p, 'tls://') === 0 || strpos($p, 'smtps://') === 0 ? 'tls' : (strpos($p, 'tcp://') === 0 ? 'tcp' : 'unknown');
-                    $conn[$key][] = ['port' => $port, 'proto' => $proto, 'raw' => $p];
-                }
-            }
-        }
-    }
-}
+// Connection info for display
+$conn = AdminService::getConnInfo();
 ?>
 
 <!-- Create new account -->
