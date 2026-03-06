@@ -7,7 +7,19 @@ if (!defined('CONTAINER')) {
 }
 
 if (!defined('DOMAIN')) {
-    define('DOMAIN', getenv('MADDY_DOMAIN') ?: 'febinanddale.com');
+    // Resolve domain: prefer environment, then try maddy_data/maddy.conf, otherwise empty.
+    function read_primary_domain_from_conf(): string {
+        $conf_file = __DIR__ . '/../../maddy_data/maddy.conf';
+        if (!is_readable($conf_file)) return '';
+        $c = file_get_contents($conf_file);
+        if (preg_match('/^\$\(primary_domain\)\s*=\s*(\S+)/m', $c, $m)) {
+            return trim($m[1]);
+        }
+        return '';
+    }
+
+    $resolved = getenv('MADDY_DOMAIN') ?: read_primary_domain_from_conf();
+    define('DOMAIN', $resolved ?: '');
 }
 
 // Run a command inside the maddy container. If $stdin is provided, pipe it to the command.

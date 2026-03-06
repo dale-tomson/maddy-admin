@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (!defined('ADMIN_PASSWORD')) {
     define('ADMIN_PASSWORD', getenv('ADMIN_PASSWORD') ?: 'changeme');
-    define('DOMAIN',         getenv('MADDY_DOMAIN')   ?: 'febinanddale.com');
+    // `DOMAIN` is resolved in `maddy_connector.php` from env or maddy_data/maddy.conf
     define('CONTAINER',      getenv('MADDY_CONTAINER') ?: 'maddy');
 }
 
