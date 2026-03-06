@@ -7,10 +7,10 @@ A lightweight PHP web interface for managing [maddy](https://maddy.email) email 
 ## Stack
 
 | Layer | Technology |
-|-------|-----------|
+|-------|------------|
 | Runtime | PHP 8 built-in server (`php -S`) |
 | Container | `php:8-alpine` + `docker-cli` |
-| Logic | `AdminService` class in `app/lib/` |
+| Logic | Classes in `app/lib/` |
 | Auth | Single shared password via env var |
 
 ---
@@ -31,10 +31,11 @@ admin/
 │   ├── _auth.php       # Bootstrap: session, constants, auth guard
 │   ├── _head.php       # Shared HTML header partial
 │   ├── _foot.php       # Shared HTML footer partial
-│   ├── maddy_connector.php  # Core helpers: maddy(), listAccounts(), flash, DOMAIN
-│   ├── maddy_status.php     # Container status helper (login page indicator)
 │   └── lib/
-│       └── AdminService.php # All POST handlers + data-fetch helpers
+│       ├── Maddy.php         # Docker exec wrapper: exec(), listAccounts(), domain()
+│       ├── Flash.php         # Session flash: Flash::set() / Flash::pop()
+│       ├── MaddyStatus.php   # Container up/starting/down detection
+│       └── AdminService.php  # All POST handlers + data-fetch helpers
 └── examplenginx.conf   # Example nginx reverse-proxy config
 ```
 
@@ -65,7 +66,7 @@ docker compose up -d
 docker logs -f maddy-admin
 ```
 
-The UI is available at `http://localhost:11000` (or the configured `ADMIN_PORT`).  
+The UI is available at `http://localhost:11000` (or the configured `ADMIN_PORT`).
 Behind nginx, proxy to `http://127.0.0.1:11000` — see `examplenginx.conf` for a ready-to-use config.
 
 ---
@@ -84,11 +85,13 @@ Behind nginx, proxy to `http://127.0.0.1:11000` — see `examplenginx.conf` for 
 
 ## Architecture notes
 
-- **All business logic lives in `app/lib/AdminService.php`** — view files are thin and only call `AdminService::handlePost('<scope>')` + `AdminService::get*()` helpers.
-- **Action dispatcher** — `handlePost()` maps `$_POST['action']` values to small private handler methods via a static `$actionMap`. No long if/else chains in views.
-- **`DOMAIN` constant** is resolved at runtime from `MADDY_DOMAIN` env var or parsed from `maddy_data/maddy.conf` — never hardcoded.
-- **Maddy commands** run via `docker exec` inside the `maddy` container through the shared Docker socket (`/var/run/docker.sock`).
-- **Volume mount:** only `./admin/app` is mounted as `/app`. Any PHP file the container needs must be inside `admin/app/`.
+- **`lib/` holds all reusable code** — view files are thin and only call into `lib/`.
+- **`Maddy`** wraps all `docker exec` interaction with the maddy container: `Maddy::exec()`, `Maddy::listAccounts()`, `Maddy::domain()`.
+- **`Flash`** manages session flash messages: `Flash::set()` before a redirect, `Flash::pop()` at the top of the next page.
+- **`MaddyStatus`** checks whether the maddy container is up, starting, or down — used by the login page.
+- **`AdminService`** is the single place for POST handling and data fetching. Views call `AdminService::handlePost('<scope>')` and `AdminService::get*()` helpers. Action dispatch is driven by a static `$actionMap` — no if/else chains.
+- **`DOMAIN` constant** is resolved at runtime from the `MADDY_DOMAIN` env var or parsed from `maddy_data/maddy.conf` — never hardcoded.
+- **Volume mount:** only `./admin/app` is mounted as `/app`. Any PHP the container needs must live inside `admin/app/`.
 
 ---
 
