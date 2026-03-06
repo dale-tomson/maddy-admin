@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/maddy_status.php';
+$maddy_status = get_maddy_status();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,11 +92,20 @@
 <body>
 <nav class="nav-bar">
   <div class="ax-container">
-    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between">
       <a href="/accounts.php" class="nav-brand">
         <span style="font-size:1.1rem">📬</span> Maddy Admin
       </a>
       <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="display:flex;align-items:center;margin-right:.5rem">
+          <?php if ($maddy_status['state'] === 'up'): ?>
+            <span class="badge" title="<?= htmlspecialchars($maddy_status['msg']) ?>">UP</span>
+          <?php elseif ($maddy_status['state'] === 'starting'): ?>
+            <span class="badge" style="background:#fef3c7;color:#92400e" title="<?= htmlspecialchars($maddy_status['msg']) ?>">STARTING</span>
+          <?php else: ?>
+            <span class="badge" style="background:#fee2e2;color:#991b1b" title="<?= htmlspecialchars($maddy_status['msg']) ?>">DOWN</span>
+          <?php endif; ?>
+        </div>
         <div class="nav-pill">
           <a href="/accounts.php" class="nav-link <?= ($page??'')==='accounts'?'active':'' ?>">Accounts</a>
           <a href="/passwd.php"   class="nav-link <?= ($page??'')==='passwd'  ?'active':'' ?>">Passwords</a>

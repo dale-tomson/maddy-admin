@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     }
     $error = 'Invalid password.';
 }
+require_once __DIR__ . '/maddy_status.php';
+$maddy_status = get_maddy_status();
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,7 +46,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
     <div class="ax-card ax-card--shadow">
 
       <div class="ax-card__body" style="padding:2rem">
-        <div class="login-logo">📬</div>
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+          <div class="login-logo">📬</div>
+          <div style="display:flex;flex-direction:column">
+            <div style="font-weight:700;color:#0f172a">Maddy Admin</div>
+            <div style="font-size:.78rem;color:#64748b">
+              <?php if ($maddy_status['state']==='up'): ?>
+                <span style="color:#15803d;font-weight:700">●</span> Available
+              <?php elseif ($maddy_status['state']==='starting'): ?>
+                <span style="color:#92400e;font-weight:700">●</span> Starting
+              <?php else: ?>
+                <span style="color:#b91c1c;font-weight:700">●</span> Unavailable
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
         <h1 style="font-size:1.05rem;font-weight:700;color:#0f172a;margin:0 0 .25rem">Maddy Admin</h1>
         <p style="font-size:.825rem;color:#94a3b8;margin:0 0 1.5rem">Sign in to manage email accounts</p>
 
