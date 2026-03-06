@@ -3,38 +3,14 @@ require '_auth.php';
 
 $flash = popFlash();
 
-// ── Handle POST actions ───────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    if ($action === 'create') {
-        $id = preg_replace('/[^a-zA-Z0-9._+\-]/', '', trim($_POST['identifier'] ?? ''));
-        $pw = $_POST['new_password'] ?? '';
-
-        if (!$id || !$pw) {
-            setFlash('Username and password are required.', 'err');
-        } else {
-            $email = $id . '@' . DOMAIN;
-            maddy('maddy creds create ' . escapeshellarg($email), $pw);
-            maddy('maddy imap-acct create ' . escapeshellarg($email));
-            setFlash('Created: ' . $email);
-        }
-        header('Location: /accounts.php'); exit;
-    }
-
-    if ($action === 'delete') {
-        $email = $_POST['email'] ?? '';
-        if ($email && str_contains($email, '@')) {
-            maddy('maddy creds remove '    . escapeshellarg($email));
-            maddy('maddy imap-acct remove '. escapeshellarg($email));
-            setFlash('Deleted: ' . $email);
-        }
-        header('Location: /accounts.php'); exit;
-    }
-}
-
-// ── Fetch account list ────────────────────────────────────────────────────────
-$accounts = listAccounts();
+require_once __DIR__ . '/accounts_logic.php';
+// Handle any POST actions (may redirect)
+handle_accounts_post();
+// Fetch view data
+$data = get_accounts_data();
+$accounts = $data['accounts'];
+$creds = $data['creds'];
+$imaps = $data['imaps'];
 
 // ── Render ────────────────────────────────────────────────────────────────────
 $page  = 'accounts';
@@ -53,6 +29,31 @@ require '_head.php';
 </div>
 <?php endif; ?>
 
+<?php
+// -- Connection info: parse maddy config for ports and hostname
+$conf_file = __DIR__ . '/../../maddy_data/maddy.conf';
+$conn = ['smtp' => [], 'submission' => [], 'imap' => [], 'hostname' => DOMAIN];
+if (is_readable($conf_file)) {
+    $c = file_get_contents($conf_file);
+    if (preg_match('/^\$\(hostname\)\s*=\s*(\S+)/m', $c, $m)) {
+        $conn['hostname'] = trim($m[1]);
+    }
+    if (preg_match_all('/^\s*(smtp|submission|imap)\s+([^\{\n]+)/m', $c, $mats, PREG_SET_ORDER)) {
+        foreach ($mats as $m) {
+            $key = $m[1];
+            $parts = preg_split('/\s+/', trim($m[2]));
+            foreach ($parts as $p) {
+                if (preg_match('/:(\d+)/', $p, $pm)) {
+                    $port = $pm[1];
+                    $proto = strpos($p, 'tls://') === 0 || strpos($p, 'smtps://') === 0 ? 'tls' : (strpos($p, 'tcp://') === 0 ? 'tcp' : 'unknown');
+                    $conn[$key][] = ['port' => $port, 'proto' => $proto, 'raw' => $p];
+                }
+            }
+        }
+    }
+}
+?>
+
 <!-- Create new account -->
 <div class="panel">
   <div class="panel-head"><h3>New Account</h3></div>
@@ -64,7 +65,8 @@ require '_head.php';
           <label class="ax-label">Username</label>
           <div class="input-group">
             <input type="text" name="identifier" class="ax-input"
-              placeholder="username" autocomplete="off" required>
+              placeholder="username" autocomplete="off" required
+              value="<?= htmlspecialchars($_GET['identifier'] ?? '') ?>">
             <span class="input-addon">@<?= htmlspecialchars(DOMAIN) ?></span>
           </div>
         </div>
@@ -73,13 +75,23 @@ require '_head.php';
           <input type="password" name="new_password" class="ax-input"
             placeholder="Password" required autocomplete="new-password">
         </div>
-        <div>
+        <div class="ax-form-group ax-form-group--small">
+          <label style="display:flex;align-items:center;gap:.5rem;margin:0">
+            <input type="checkbox" id="no_mailbox" name="no_mailbox" value="1" <?= (isset($_GET['no_mailbox']) && $_GET['no_mailbox']==='1') ? 'checked' : '' ?>>
+            <span style="font-size:.9rem">No mailbox (sending only)</span>
+          </label>
+        </div>
+        <div class="form-actions">
           <button type="submit" class="ax-btn ax-btn--primary">
             + Create
           </button>
         </div>
       </div>
     </form>
+    <div style="color:#64748b;font-size:.85rem;margin-top:.5rem;margin-left:4px">
+      Checking "No mailbox" creates credentials that can be used to authenticate and send mail,
+      but no IMAP mailbox will be created and incoming mail will not be stored for that address.
+    </div>
   </div>
 </div>
 
@@ -97,25 +109,63 @@ require '_head.php';
     <thead>
       <tr>
         <th>Email Address</th>
+        <th>IMAP</th>
+        <th>SMTP Cred</th>
         <th style="text-align:right">Actions</th>
       </tr>
     </thead>
     <tbody>
       <?php foreach ($accounts as $acc): ?>
+      <?php $has_imap = in_array($acc, $imaps, true); $has_cred = in_array($acc, $creds, true); ?>
       <tr>
         <td><span class="mono"><?= htmlspecialchars($acc) ?></span></td>
+        <td>
+          <?php if ($has_imap): ?>
+            <span class="mini-badge mini-badge--imap">IMAP</span>
+          <?php else: ?>
+            <span class="mini-badge mini-badge--noimap">No IMAP</span>
+          <?php endif; ?>
+        </td>
+        <td>
+          <?php if ($has_cred): ?>
+            <span class="mini-badge mini-badge--smtp">SMTP</span>
+          <?php else: ?>
+            <span class="mini-badge mini-badge--nosmtp">No SMTP</span>
+          <?php endif; ?>
+        </td>
         <td class="act-cell">
-          <a href="/passwd.php?email=<?= urlencode($acc) ?>"
-             class="ax-btn ax-btn--sm ax-btn--outline-primary"
-             style="min-height:30px;padding:.2rem .75rem;font-size:.78rem">
-            Change PW
-          </a>
-          <button type="button"
-            class="ax-btn ax-btn--sm ax-btn--outline-danger"
-            style="min-height:30px;padding:.2rem .75rem;font-size:.78rem"
-            onclick="openDelete(<?= htmlspecialchars(json_encode($acc)) ?>)">
-            Delete
-          </button>
+          <?php $hid = substr(md5($acc),0,8); ?>
+          <div style="position:relative;display:inline-block">
+            <button type="button" class="kebab-btn ax-btn ax-btn--sm" aria-controls="menu-<?= $hid ?>" aria-expanded="false" onclick="toggleMenu('menu-<?= $hid ?>', this)">⋯</button>
+            <div id="menu-<?= $hid ?>" class="action-menu" style="display:none;">
+              <?php if (!$has_imap): ?>
+              <form method="post">
+                <input type="hidden" name="action" value="create_imap">
+                <input type="hidden" name="email" value="<?= htmlspecialchars($acc) ?>">
+                <button type="submit">Create IMAP</button>
+              </form>
+              <?php else: ?>
+              <form method="post" onsubmit="return confirm('Delete IMAP account and mail?');">
+                <input type="hidden" name="action" value="delete_imap">
+                <input type="hidden" name="email" value="<?= htmlspecialchars($acc) ?>">
+                <button type="submit">Delete IMAP</button>
+              </form>
+              <?php endif; ?>
+
+              <?php if (!$has_cred): ?>
+              <a href="/accounts.php?identifier=<?= urlencode(explode('@',$acc)[0]) ?>&no_mailbox=1">Create Sending Cred</a>
+              <?php else: ?>
+              <form method="post" onsubmit="return confirm('Remove SMTP credential?');">
+                <input type="hidden" name="action" value="delete_smtp">
+                <input type="hidden" name="email" value="<?= htmlspecialchars($acc) ?>">
+                <button type="submit">Remove Cred</button>
+              </form>
+              <?php endif; ?>
+
+              <a href="/passwd.php?email=<?= urlencode($acc) ?>">Change Password</a>
+              <button type="button" onclick="openDelete(<?= htmlspecialchars(json_encode($acc)) ?>)">Delete Account</button>
+            </div>
+          </div>
         </td>
       </tr>
       <?php endforeach; ?>

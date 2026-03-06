@@ -10,7 +10,7 @@ if ($uri === '' || $uri === 'index.php') {
 }
 
 // Only allow known PHP pages
-$allowed = ['accounts.php', 'passwd.php', 'dns.php', 'logout.php'];
+$allowed = ['accounts.php', 'passwd.php', 'dns.php', 'smtp.php', 'logout.php'];
 if (in_array($uri, $allowed, true) && file_exists(__DIR__ . '/' . $uri)) {
     require __DIR__ . '/' . $uri;
     return;

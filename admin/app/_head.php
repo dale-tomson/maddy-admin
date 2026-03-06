@@ -67,8 +67,11 @@ $maddy_status = get_maddy_status();
                  font-size:.82rem; white-space:nowrap; }
 
   /* Form row */
-  .form-row { display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap; }
-  .form-row .ax-form-group { flex:1; min-width:180px; margin-bottom:0; }
+  .form-row { display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap; }
+  .form-row .ax-form-group { flex:1 1 220px; min-width:180px; margin-bottom:0; }
+  .ax-form-group--small { flex:0 0 auto; align-self:center; }
+  .form-actions { display:flex; align-items:center; flex:0 0 auto; }
+  .form-actions .ax-btn { margin-left:auto; }
 
   /* Table */
   .clean-table { width:100%; border-collapse:collapse; }
@@ -76,7 +79,7 @@ $maddy_status = get_maddy_status();
                     letter-spacing:.05em; color:#94a3b8; padding:.6rem 1.25rem;
                     border-bottom:1px solid #f1f5f9; text-align:left; }
   .clean-table td { padding:.8rem 1.25rem; border-bottom:1px solid #f8fafc;
-                    font-size:.875rem; color:#1e293b; }
+                    font-size:.875rem; color:#1e293b; vertical-align:middle; }
   .clean-table tr:last-child td { border-bottom:none; }
   .clean-table tbody tr:hover td { background:#fafafa; }
   .mono { font-family:ui-monospace,"SF Mono",monospace; font-size:.82rem; }
@@ -85,8 +88,34 @@ $maddy_status = get_maddy_status();
   .act-cell { text-align:right; white-space:nowrap; }
   .act-cell .ax-btn { margin-left:.4rem; }
 
+  /* Compact status badges used in tables */
+  .mini-badge { display:inline-block; padding:.18rem .5rem; border-radius:8px; font-size:.72rem; font-weight:700; }
+  .mini-badge--imap { background:#dcfce7; color:#166534; }
+  .mini-badge--noimap { background:#fee2e2; color:#991b1b; }
+  .mini-badge--smtp { background:#eef2ff; color:#3730a3; }
+  .mini-badge--nosmtp { background:#fff7ed; color:#7c2d12; }
+
+  .act-cell { display:flex; gap:.5rem; align-items:center; justify-content:flex-end; }
+
   /* Empty state */
   .empty { text-align:center; padding:3rem; color:#94a3b8; font-size:.875rem; }
+
+  /* Toast / snackbar */
+  .ax-toast { position:fixed; right:1rem; bottom:1rem; background:#0f172a; color:#fff; padding:.6rem .9rem; border-radius:8px; box-shadow:0 8px 20px rgba(2,6,23,.3); opacity:0; transform:translateY(8px); transition:opacity .18s ease,transform .18s ease; pointer-events:none; z-index:120; }
+  .ax-toast.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+
+  /* Compact action menu (kebab) */
+  .kebab-btn { background:transparent; border:1px solid transparent; padding:.25rem .5rem; border-radius:6px; font-weight:700; }
+  .action-menu { background:#fff; border:1px solid #e6eef8; box-shadow:0 12px 36px rgba(2,6,23,.12); border-radius:10px; padding:.25rem; min-width:220px; }
+  .action-menu form, .action-menu a, .action-menu button { display:block; width:100%; text-align:left; margin:0; padding:.6rem .9rem; border-radius:6px; font-size:.95rem; color:#0f172a; background:transparent; border:none; line-height:1.2; }
+  .action-menu form:hover, .action-menu a:hover, .action-menu button:hover { background:#fbfdff; }
+  .action-menu > * + * { border-top:1px solid #f1f5f9; }
+  .action-menu { transition:transform .14s cubic-bezier(.2,.9,.2,1),opacity .14s ease; transform-origin:top right; opacity:0; transform:translateY(-4px); }
+  .action-menu.show { opacity:1; transform:translateY(0); }
+  .action-menu::before { content:''; position:absolute; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:8px solid #fff; top:-8px; left:calc(50% - 8px); filter:drop-shadow(0 6px 18px rgba(2,6,23,.08)); }
+
+  .kebab-btn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:#fff; border:1px solid #e6eef8; box-shadow:0 1px 2px rgba(2,6,23,.04); }
+  .kebab-btn:focus { outline:3px solid rgba(59,130,246,.18); }
 </style>
 </head>
 <body>
@@ -108,6 +137,7 @@ $maddy_status = get_maddy_status();
         </div>
         <div class="nav-pill">
           <a href="/accounts.php" class="nav-link <?= ($page??'')==='accounts'?'active':'' ?>">Accounts</a>
+          <a href="/smtp.php"     class="nav-link <?= ($page??'')==='smtp' ?'active':'' ?>">SMTP</a>
           <a href="/passwd.php"   class="nav-link <?= ($page??'')==='passwd'  ?'active':'' ?>">Passwords</a>
           <a href="/dns.php"      class="nav-link <?= ($page??'')==='dns'     ?'active':'' ?>">DNS Records</a>
         </div>
